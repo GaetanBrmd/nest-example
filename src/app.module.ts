@@ -6,15 +6,19 @@ import { validationSchema } from 'config/validation';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
+import { Post } from './models/post.entity';
+import { User } from './models/user.entity';
 
 @Module({
   imports: [
+    // Provide ConfigService
     ConfigModule.forRoot({
       envFilePath: `${process.cwd()}/config/env/${process.env.NODE_ENV}.env`,
       load: [configuration],
       validationSchema,
       isGlobal: true,
     }),
+    // Provide DB connection
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -28,6 +32,8 @@ import { LoggerMiddleware } from './middlewares/logger.middleware';
       }),
       inject: [ConfigService],
     }),
+    // Provide repository for User entity
+    TypeOrmModule.forFeature([User, Post]),
   ],
   controllers: [AppController],
   providers: [AppService],
