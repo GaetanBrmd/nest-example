@@ -1,11 +1,7 @@
-import { Catch, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { ClientKafka } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  EntityNotFoundError,
-  InsertResult,
-  QueryFailedError,
-  Repository,
-} from 'typeorm';
+import { Repository } from 'typeorm';
 import { AddPostDto } from './models/add-post.dto';
 import { CreateUserDto } from './models/create-user.dto';
 import { Post } from './models/post.entity';
@@ -18,6 +14,7 @@ export class AppService {
   constructor(
     @InjectRepository(User) private userRepository: Repository<User>,
     @InjectRepository(Post) private postRepository: Repository<Post>,
+    @Inject('KAFKA_CLIENT') private kafkaClient: ClientKafka,
   ) {}
 
   getHello(): string {
@@ -47,6 +44,8 @@ export class AppService {
     user.id = userId;
     post.user = user;
     post.text = addPostDto.text;
+
+    this.kafkaClient.emit('post.created', post);
 
     return this.postRepository.save(post);
   }

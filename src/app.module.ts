@@ -1,5 +1,6 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { configuration } from '../config/configuration';
 import { validationSchema } from '../config/validation';
@@ -34,6 +35,26 @@ import { User } from './models/user.entity';
     }),
     // Provide repository for User entity
     TypeOrmModule.forFeature([User, Post]),
+    // Provide Kafka Client
+    ClientsModule.registerAsync([
+      {
+        name: 'KAFKA_CLIENT',
+        imports: [ConfigModule],
+        inject: [ConfigService],
+        useFactory: (configService: ConfigService) => ({
+          transport: Transport.KAFKA,
+          options: {
+            client: {
+              clientId: 'post',
+              brokers: configService.get('kafka.brokers'),
+            },
+            consumer: {
+              groupId: 'post-consumer',
+            },
+          },
+        }),
+      },
+    ]),
   ],
   controllers: [AppController],
   providers: [AppService],
