@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AddPostDto } from './models/add-post.dto';
 import { CreateUserDto } from './models/create-user.dto';
+import { PostCreatedEvent } from './models/post-created.event';
 import { Post } from './models/post.entity';
 import { User } from './models/user.entity';
 
@@ -45,8 +46,13 @@ export class AppService {
     post.user = user;
     post.text = addPostDto.text;
 
-    this.kafkaClient.emit('post.created', post);
+    const res = await this.postRepository.save(post);
 
-    return this.postRepository.save(post);
+    this.kafkaClient.emit(
+      'post.created',
+      new PostCreatedEvent(res.id, res.user.id, res.text),
+    );
+
+    return res;
   }
 }

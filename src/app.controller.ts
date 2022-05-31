@@ -7,10 +7,13 @@ import {
   Param,
   Post,
 } from '@nestjs/common';
-import { InsertResult, QueryFailedError } from 'typeorm';
+import { EventPattern, Payload } from '@nestjs/microservices';
+import { QueryFailedError } from 'typeorm';
 import { AppService } from './app.service';
 import { AddPostDto } from './models/add-post.dto';
 import { CreateUserDto } from './models/create-user.dto';
+import { PostCreatedEvent } from './models/post-created.event';
+import { Post as PostEntity } from './models/post.entity';
 import { User } from './models/user.entity';
 
 @Controller()
@@ -45,7 +48,7 @@ export class AppController {
   }
 
   @Post('/users/:id/posts')
-  async addPhoto(@Param('id') userId: number, @Body() addPostDto: AddPostDto) {
+  async addPost(@Param('id') userId: number, @Body() addPostDto: AddPostDto) {
     try {
       await this.appService.addPost(userId, addPostDto);
     } catch (error) {
@@ -54,5 +57,10 @@ export class AppController {
       }
     }
     return addPostDto;
+  }
+
+  @EventPattern('post.created')
+  async postCreated(@Payload() message: { value: PostCreatedEvent }) {
+    this.logger.log('POST CREATED :', message.value);
   }
 }
